@@ -183,6 +183,7 @@ function createPlayers() {
     folded: false,
     allIn: false,
     roundContribution: 0,
+    totalContribution: 0,
     hasActedThisRound: false
   }];
 
@@ -198,6 +199,7 @@ function createPlayers() {
       folded: false,
       allIn: false,
       roundContribution: 0,
+      totalContribution: 0,
       hasActedThisRound: false
     });
   }
@@ -224,6 +226,7 @@ function resetTable() {
     player.folded = false;
     player.allIn = false;
     player.roundContribution = 0;
+    player.totalContribution = 0;
     player.hasActedThisRound = false;
   });
 
@@ -336,6 +339,7 @@ function postBlind(player, amount) {
   const bet = Math.min(amount, player.stack);
   player.stack -= bet;
   player.roundContribution += bet;
+  player.totalContribution += bet;
   state.pot += bet;
   state.currentBet = Math.max(state.currentBet, player.roundContribution);
   player.hasActedThisRound = true;
@@ -436,6 +440,7 @@ function applyAction(player, action, amount = 0) {
     const callAmount = Math.min(toCall, player.stack);
     player.stack -= callAmount;
     player.roundContribution += callAmount;
+    player.totalContribution += callAmount;
     state.pot += callAmount;
     player.hasActedThisRound = true;
     if (player.roundContribution > state.currentBet) state.currentBet = player.roundContribution;
@@ -460,6 +465,7 @@ function applyAction(player, action, amount = 0) {
 
     player.stack -= actualRaise;
     player.roundContribution += actualRaise;
+    player.totalContribution += actualRaise;
     state.pot += actualRaise;
     state.currentBet = Math.max(state.currentBet, player.roundContribution);
     player.hasActedThisRound = true;
@@ -621,6 +627,58 @@ function evaluatePlayer(player, boardCards) {
   return bestFiveCards(combined);
 }
 
+// New: distribute pots properly including side-pots when players go all-in
+function distributePots() {
+  // Build contributors list with remaining contributions
+  const contributors = state.players.map((p) => ({ player: p, contrib: p.totalContribution }));
+  let remainingTotal = contributors.reduce((s, c) => s + c.contrib, 0);
+
+  while (contributors.some((c) => c.contrib > 0)) {
+    // Find minimum positive contribution among contributors
+    const positive = contributors.filter((c) => c.contrib > 0);
+    const minContrib = Math.min(...positive.map((c) => c.contrib));
+    const participants = positive.length;
+    const sidePotAmount = minContrib * participants;
+
+    // Eligible winners are those who contributed to this sidepot and have not folded
+    const eligible = contributors.filter((c) => c.contrib >= minContrib && !c.player.folded).map((c) => c.player);
+
+    if (eligible.length === 0) {
+      // If no eligible (everyone who contributed to this slice folded), then award to last non-folded player overall
+      const lastStanding = state.players.find((p) => !p.folded) || state.players[0];
+      lastStanding.stack += sidePotAmount;
+      appendLog(`${lastStanding.name} wins ${formatMoney(sidePotAmount)} (uncontested side pot).`);
+    } else {
+      // Evaluate best hand among eligible players
+      const ranks = eligible.map((p) => ({ player: p, rank: evaluatePlayer(p, state.communityCards) }));
+      ranks.sort((a, b) => compareHands(b.rank, a.rank));
+      const bestRank = ranks[0].rank;
+      const winners = ranks.filter((r) => compareHands(r.rank, bestRank) === 0).map((r) => r.player);
+
+      const split = Math.floor(sidePotAmount / winners.length);
+      const rem = sidePotAmount % winners.length;
+
+      winners.forEach((w, idx) => {
+        const payout = split + (idx === 0 ? rem : 0);
+        w.stack += payout;
+        appendLog(`${w.name} wins ${formatMoney(payout)} from side pot.`);
+      });
+    }
+
+    // Subtract minContrib from all contributors
+    contributors.forEach((c) => {
+      if (c.contrib > 0) {
+        c.contrib -= minContrib;
+      }
+    });
+
+    remainingTotal -= sidePotAmount;
+  }
+
+  // After distribution, reset pot
+  state.pot = 0;
+}
+
 function finishHand() {
   const stillIn = state.players.filter((player) => !player.folded);
 
@@ -637,23 +695,11 @@ function finishHand() {
     return;
   }
 
-  const showdown = stillIn.map((player) => ({ player, rank: evaluatePlayer(player, state.communityCards) }));
-  showdown.sort((a, b) => compareHands(b.rank, a.rank));
-  const winningRank = showdown[0].rank;
-  const winners = showdown.filter((entry) => compareHands(entry.rank, winningRank) === 0);
-  const totalPot = state.pot;
-  const splitAmount = Math.floor(totalPot / winners.length);
-  const remainder = totalPot % winners.length;
+  // Use totalContribution per player to distribute main and side pots correctly
+  distributePots();
 
-  winners.forEach((entry, index) => {
-    const payout = splitAmount + (index === 0 ? remainder : 0);
-    entry.player.stack += payout;
-    appendLog(`${entry.player.name} wins ${formatMoney(payout)}.`);
-  });
-
-  state.pot = 0;
   updatePotDisplay();
-  setStatus(`${winners.map((entry) => entry.player.name).join(', ')} win the pot of ${formatMoney(totalPot)}.`);
+  setStatus(`Showdown: winners have been paid.`);
   state.currentStage = 'showdown';
   renderCommunityCards();
   renderPlayerSeats();
@@ -683,6 +729,7 @@ function beginHand() {
     player.folded = false;
     player.allIn = false;
     player.roundContribution = 0;
+    player.totalContribution = 0;
     player.hasActedThisRound = false;
   });
 
@@ -811,7 +858,8 @@ window.pokerServerHooks = {
         name: player.name,
         stack: player.stack,
         folded: player.folded,
-        allIn: player.allIn
+        allIn: player.allIn,
+        totalContribution: player.totalContribution
       }))
     };
   },
@@ -826,7 +874,7 @@ window.pokerServerHooks = {
     return true;
   },
   getVersion() {
-    return '1.0.0';
+    return '1.0.1';
   }
 };
 
