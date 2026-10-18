@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080808">
+  <title>Texas Hold’em Powerball</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-mark" aria-hidden="true">♠</div>
+    <div>
+      <p class="eyebrow">THE PREMIUM POKER EXPERIENCE</p>
+      <h1>Texas Hold’em <span>Powerball</span></h1>
+    </div>
+    <div class="chip-pill">🪙 <span id="bankroll">10,000</span></div>
+  </header>
+
+  <main class="layout">
+    <section class="game-panel">
+      <div class="table-heading">
+        <div><span class="live-dot"></span> LIVE TABLE <span class="muted">· Multiplayer demo</span></div>
+        <div class="blinds">BLINDS <b>10 / 20</b></div>
+      </div>
+
+      <div class="poker-table">
+        <div class="table-ring"></div>
+
+        <div class="seat seat-top" id="ai-seat-1">
+          <div class="avatar">🤖</div>
+          <div class="seat-name" id="ai-1-name">AI Player 1</div>
+          <div class="seat-stack"><span id="ai-1-stack">2,000</span> chips</div>
+          <div class="cards" id="ai-1-cards">
+            <span class="card back">★</span>
+            <span class="card back">★</span>
+          </div>
+        </div>
+
+        <div class="seat seat-left" id="ai-seat-2">
+          <div class="avatar">🤖</div>
+          <div class="seat-name" id="ai-2-name">AI Player 2</div>
+          <div class="seat-stack"><span id="ai-2-stack">2,000</span> chips</div>
+          <div class="cards" id="ai-2-cards">
+            <span class="card back">★</span>
+            <span class="card back">★</span>
+          </div>
+        </div>
+
+        <div class="seat seat-right" id="ai-seat-3">
+          <div class="avatar">🤖</div>
+          <div class="seat-name" id="ai-3-name">AI Player 3</div>
+          <div class="seat-stack"><span id="ai-3-stack">2,000</span> chips</div>
+          <div class="cards" id="ai-3-cards">
+            <span class="card back">★</span>
+            <span class="card back">★</span>
+          </div>
+        </div>
+
+        <div class="pot">POT <strong id="pot">0</strong></div>
+        <div class="community-cards" id="community-cards" aria-label="Community cards"></div>
+
+        <div class="powerball-machine" aria-label="Powerball-style card dealing feature">
+          <div class="machine-orb">P</div>
+          <div class="machine-label">POWERBALL DEALER</div>
+        </div>
+
+        <div class="turn-indicator" id="turn-indicator">Waiting for deal</div>
+
+        <div class="seat seat-bottom" id="human-seat">
+          <div class="cards" id="player-cards"></div>
+          <div class="player-info">
+            <div class="seat-name" id="human-name">YOU <span class="you-tag">PLAYER</span></div>
+            <div class="seat-stack"><span id="player-stack">10,000</span> chips</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="status" id="status" role="status">Welcome! Start a hand and watch the AI table react.</div>
+
+      <div class="bet-panel">
+        <div class="bet-row">
+          <label for="bet-range">Bet size</label>
+          <span id="bet-amount-label">$40</span>
+        </div>
+        <input type="range" id="bet-range" min="20" max="500" step="10" value="40">
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-primary" id="deal-btn">⚡ Deal New Hand</button>
+        <button class="btn" id="check-btn" disabled>Check / Call</button>
+        <button class="btn" id="raise-btn" disabled>Bet / Raise</button>
+        <button class="btn" id="fold-btn" disabled>Fold</button>
+      </div>
+      <p class="disclaimer">Browser prototype · Server-ready hooks included for a future secure backend.</p>
+    </section>
+
+    <aside class="side-panel">
+      <section class="side-card">
+        <p class="eyebrow">TABLE SETTINGS</p>
+        <label for="difficulty">AI skill level</label>
+        <select id="difficulty">
+          <option value="beginner">Beginner</option>
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="expert">Expert</option>
+        </select>
+        <label for="starting-chips">Starting chips</label>
+        <select id="starting-chips">
+          <option value="5000">5,000</option>
+          <option value="10000" selected>10,000</option>
+          <option value="25000">25,000</option>
+        </select>
+        <button class="btn btn-wide" id="reset-btn">Reset Practice Chips</button>
+      </section>
+
+      <section class="side-card">
+        <p class="eyebrow">GAME FLOW</p>
+        <ul class="feature-list">
+          <li><span>✓</span> 4-seat table</li>
+          <li><span>✓</span> AI opponents</li>
+          <li><span>✓</span> Betting rounds</li>
+          <li><span>✓</span> Hand ranking</li>
+          <li><span>✓</span> Server-ready hooks</li>
+          <li><span>✓</span> Reveal animations</li>
+        </ul>
+      </section>
+
+      <section class="side-card">
+        <p class="eyebrow">BUILD STATUS</p>
+        <div class="progress-row"><span>Playable table demo</span><b>Ready</b></div>
+        <div class="progress-track"><div class="progress-fill"></div></div>
+        <p class="small-note">This prototype includes multiplayer-style flow and betting logic in-browser, while keeping the architecture ready for future trust boundary/server side validation.</p>
+      </section>
+    </aside>
+  </main>
+
+  <footer>© Texas Hold’em Powerball · Practice table · Virtual chips only</footer>
+  <script src="game.js"></script>
+</body>
+</html>
