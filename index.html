@@ -24,37 +24,64 @@
         <div class="blinds">BLINDS <b>10 / 20</b></div>
       </div>
 
-      <div class="poker-table">
+      <div class="poker-table" id="table-root">
         <div class="table-ring"></div>
 
-        <div class="seat seat-top" id="ai-seat-1">
+        <!-- Seats 1..8 (up to 9 players including human) -->
+        <div class="seat seat-pos-1" id="ai-seat-1">
           <div class="avatar">🤖</div>
           <div class="seat-name" id="ai-1-name">AI Player 1</div>
           <div class="seat-stack"><span id="ai-1-stack">2,000</span> chips</div>
-          <div class="cards" id="ai-1-cards">
-            <span class="card back">★</span>
-            <span class="card back">★</span>
-          </div>
+          <div class="cards" id="ai-1-cards"><span class="card back">★</span><span class="card back">★</span></div>
         </div>
 
-        <div class="seat seat-left" id="ai-seat-2">
+        <div class="seat seat-pos-2" id="ai-seat-2">
           <div class="avatar">🤖</div>
           <div class="seat-name" id="ai-2-name">AI Player 2</div>
           <div class="seat-stack"><span id="ai-2-stack">2,000</span> chips</div>
-          <div class="cards" id="ai-2-cards">
-            <span class="card back">★</span>
-            <span class="card back">★</span>
-          </div>
+          <div class="cards" id="ai-2-cards"><span class="card back">★</span><span class="card back">★</span></div>
         </div>
 
-        <div class="seat seat-right" id="ai-seat-3">
+        <div class="seat seat-pos-3" id="ai-seat-3">
           <div class="avatar">🤖</div>
           <div class="seat-name" id="ai-3-name">AI Player 3</div>
           <div class="seat-stack"><span id="ai-3-stack">2,000</span> chips</div>
-          <div class="cards" id="ai-3-cards">
-            <span class="card back">★</span>
-            <span class="card back">★</span>
-          </div>
+          <div class="cards" id="ai-3-cards"><span class="card back">★</span><span class="card back">★</span></div>
+        </div>
+
+        <div class="seat seat-pos-4" id="ai-seat-4">
+          <div class="avatar">🤖</div>
+          <div class="seat-name" id="ai-4-name">AI Player 4</div>
+          <div class="seat-stack"><span id="ai-4-stack">2,000</span> chips</div>
+          <div class="cards" id="ai-4-cards"><span class="card back">★</span><span class="card back">★</span></div>
+        </div>
+
+        <div class="seat seat-pos-5" id="ai-seat-5">
+          <div class="avatar">🤖</div>
+          <div class="seat-name" id="ai-5-name">AI Player 5</div>
+          <div class="seat-stack"><span id="ai-5-stack">2,000</span> chips</div>
+          <div class="cards" id="ai-5-cards"><span class="card back">★</span><span class="card back">★</span></div>
+        </div>
+
+        <div class="seat seat-pos-6" id="ai-seat-6">
+          <div class="avatar">🤖</div>
+          <div class="seat-name" id="ai-6-name">AI Player 6</div>
+          <div class="seat-stack"><span id="ai-6-stack">2,000</span> chips</div>
+          <div class="cards" id="ai-6-cards"><span class="card back">★</span><span class="card back">★</span></div>
+        </div>
+
+        <div class="seat seat-pos-7" id="ai-seat-7">
+          <div class="avatar">🤖</div>
+          <div class="seat-name" id="ai-7-name">AI Player 7</div>
+          <div class="seat-stack"><span id="ai-7-stack">2,000</span> chips</div>
+          <div class="cards" id="ai-7-cards"><span class="card back">★</span><span class="card back">★</span></div>
+        </div>
+
+        <div class="seat seat-pos-8" id="ai-seat-8">
+          <div class="avatar">🤖</div>
+          <div class="seat-name" id="ai-8-name">AI Player 8</div>
+          <div class="seat-stack"><span id="ai-8-stack">2,000</span> chips</div>
+          <div class="cards" id="ai-8-cards"><span class="card back">★</span><span class="card back">★</span></div>
         </div>
 
         <div class="pot">POT <strong id="pot">0</strong></div>
@@ -98,6 +125,17 @@
     <aside class="side-panel">
       <section class="side-card">
         <p class="eyebrow">TABLE SETTINGS</p>
+        <label for="num-players">Seats (min 2, max 9)</label>
+        <select id="num-players">
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4" selected>4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+        </select>
         <label for="difficulty">AI skill level</label>
         <select id="difficulty">
           <option value="beginner">Beginner</option>
@@ -117,7 +155,7 @@
       <section class="side-card">
         <p class="eyebrow">GAME FLOW</p>
         <ul class="feature-list">
-          <li><span>✓</span> 4-seat table</li>
+          <li><span>✓</span> Up to 9-seat table</li>
           <li><span>✓</span> AI opponents</li>
           <li><span>✓</span> Betting rounds</li>
           <li><span>✓</span> Hand ranking</li>
@@ -130,7 +168,7 @@
         <p class="eyebrow">BUILD STATUS</p>
         <div class="progress-row"><span>Playable table demo</span><b>Ready</b></div>
         <div class="progress-track"><div class="progress-fill"></div></div>
-        <p class="small-note">This prototype includes multiplayer-style flow and betting logic in-browser, while keeping the architecture ready for future trust boundary/server side validation.</p>
+        <p class="small-note">This prototype includes multiplayer-style flow and betting logic in-browser, while keeping the architecture ready for future secure backend integration.</p>
       </section>
     </aside>
   </main>
