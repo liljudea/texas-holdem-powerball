@@ -1,11 +1,14 @@
-const suits = [
-  { symbol: '♠', red: false },
-  { symbol: '♥', red: true },
-  { symbol: '♦', red: true },
-  { symbol: '♣', red: false }
-];
+// Texas Hold'em Powerball starter demo.
+// This file is a UI prototype only: it does not yet implement real poker rules,
+// secure server-side shuffling, or online multiplayer.
 
-const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+const suits = [
+  { symbol: "♠", red: false },
+  { symbol: "♥", red: true },
+  { symbol: "♦", red: true },
+  { symbol: "♣", red: false }
+];
+const ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 
 const dom = {
   bankroll: document.getElementById('bankroll'),
@@ -25,7 +28,8 @@ const dom = {
   turnIndicator: document.getElementById('turn-indicator'),
   playerCards: document.getElementById('player-cards'),
   communityCards: document.getElementById('community-cards'),
-  roundLog: document.getElementById('round-log')
+  roundLog: document.getElementById('round-log'),
+  tableRoot: document.getElementById('table-root')
 };
 
 const state = {
@@ -43,6 +47,8 @@ const state = {
   handNumber: 0,
   roundSummary: []
 };
+
+const STORAGE_KEY = 'thp_state_v1';
 
 function formatMoney(value) {
   return Number(value).toLocaleString('en-US');
@@ -169,6 +175,44 @@ function createDeck() {
   return deck;
 }
 
+function saveStateToStorage() {
+  try {
+    const payload = {
+      players: state.players.map((p) => ({ id: p.id, stack: p.stack })),
+      settings: {
+        startingChips: dom.startingChips.value,
+        difficulty: dom.difficulty.value,
+        numPlayers: dom.numPlayers.value
+      }
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch (e) {
+    // ignore storage errors
+  }
+}
+
+function loadStateFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const payload = JSON.parse(raw);
+    if (payload && payload.settings) {
+      if (payload.settings.startingChips) dom.startingChips.value = payload.settings.startingChips;
+      if (payload.settings.difficulty) dom.difficulty.value = payload.settings.difficulty;
+      if (payload.settings.numPlayers) dom.numPlayers.value = payload.settings.numPlayers;
+    }
+    if (payload && Array.isArray(payload.players) && state.players.length > 0) {
+      const human = state.players.find((p) => p.isHuman);
+      if (human) {
+        const saved = payload.players.find((p) => p.id === human.id);
+        if (saved && typeof saved.stack === 'number') human.stack = saved.stack;
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
 function createPlayers() {
   const seatCount = Math.max(2, Math.min(9, Number(dom.numPlayers.value || 4)));
   const humanStack = Number(dom.startingChips.value || 10000);
@@ -203,6 +247,20 @@ function createPlayers() {
       totalContribution: 0,
       hasActedThisRound: false
     });
+  }
+
+  // After players are created, apply persisted stacks if available
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try {
+      const payload = JSON.parse(raw);
+      if (payload && Array.isArray(payload.players)) {
+        const humanSaved = payload.players.find((p) => p.id === 'human');
+        if (humanSaved && typeof humanSaved.stack === 'number') {
+          state.players[0].stack = humanSaved.stack;
+        }
+      }
+    } catch (e) {}
   }
 
   renderPlayerSeats();
@@ -241,6 +299,7 @@ function resetTable() {
   dom.raiseButton.textContent = 'Bet / Raise';
   setStatus('Welcome! Start a hand and watch the AI table react.');
   dom.turnIndicator.textContent = 'Waiting for deal';
+  dom.dealButton.disabled = false;
 }
 
 function updateBetAmountLabel() {
@@ -486,18 +545,22 @@ function handleHumanAction(action, providedAmount) {
 
   if (action === 'fold') {
     applyAction(human, 'fold');
+    saveStateToStorage();
     return;
   }
   if (action === 'check') {
     applyAction(human, 'check');
+    saveStateToStorage();
     return;
   }
   if (action === 'call') {
     applyAction(human, 'call');
+    saveStateToStorage();
     return;
   }
   if (action === 'raise') {
     applyAction(human, 'raise', Number(providedAmount ?? dom.betRange.value ?? 20));
+    saveStateToStorage();
   }
 }
 
@@ -686,6 +749,8 @@ function finishHand() {
     renderCommunityCards();
     renderPlayerSeats();
     updatePotDisplay();
+    dom.dealButton.disabled = false;
+    saveStateToStorage();
     return;
   }
 
@@ -707,6 +772,8 @@ function finishHand() {
   renderCommunityCards();
   renderPlayerSeats();
   updateBankrollDisplay();
+  dom.dealButton.disabled = false;
+  saveStateToStorage();
 }
 
 function updateBankrollDisplay() {
@@ -718,6 +785,8 @@ function updateBankrollDisplay() {
 
 function beginHand() {
   if (state.aiTimer) clearTimeout(state.aiTimer);
+
+  dom.dealButton.disabled = true;
 
   state.handNumber += 1;
   state.currentStage = 'preflop';
@@ -736,6 +805,7 @@ function beginHand() {
     player.hasActedThisRound = false;
   });
 
+  // deal two cards each
   state.players.forEach((player) => {
     player.hand.push(state.deck.pop(), state.deck.pop());
   });
@@ -756,12 +826,29 @@ function beginHand() {
   appendLog(`${state.players[bigBlindIndex].name} posts the big blind.`);
   setStatus(`Hand #${state.handNumber}: Action begins after the blinds.`);
 
-  renderCommunityCards();
-  renderPlayerSeats();
-  updatePotDisplay();
-  updateBankrollDisplay();
-  state.currentPlayerIndex = getFirstActivePlayerAfter(bigBlindIndex);
-  prepareTurn();
+  // simple dealing animation: add class to table root and remove shortly after
+  try {
+    if (dom.tableRoot) dom.tableRoot.classList.add('dealing');
+    renderCommunityCards();
+    renderPlayerSeats();
+    updatePotDisplay();
+    updateBankrollDisplay();
+    // remove animation class after 700ms to reveal cards
+    setTimeout(() => {
+      if (dom.tableRoot) dom.tableRoot.classList.remove('dealing');
+      // first action starts with the next active player
+      state.currentPlayerIndex = getFirstActivePlayerAfter(bigBlindIndex);
+      prepareTurn();
+    }, 700);
+  } catch (e) {
+    // fall back
+    renderCommunityCards();
+    renderPlayerSeats();
+    updatePotDisplay();
+    updateBankrollDisplay();
+    state.currentPlayerIndex = getFirstActivePlayerAfter(bigBlindIndex);
+    prepareTurn();
+  }
 }
 
 function decideAiAction(player) {
@@ -818,6 +905,7 @@ function bindEvents() {
     if (state.players[0]) state.players[0].stack = newBankroll;
     resetTable();
     setStatus(`Practice chips reset to ${formatMoney(newBankroll)}. Choose Deal New Hand when ready.`);
+    saveStateToStorage();
   });
 
   dom.startingChips.addEventListener('change', () => {
@@ -826,17 +914,20 @@ function bindEvents() {
       if (state.players[0]) state.players[0].stack = amount;
       updateBankrollDisplay();
       renderPlayerSeats();
+      saveStateToStorage();
     }
   });
 
   dom.numPlayers.addEventListener('change', () => {
     resetTable();
     setStatus('Seat count updated. Start a new hand when ready.');
+    saveStateToStorage();
   });
 
   dom.difficulty.addEventListener('change', () => {
     const level = dom.difficulty.options[dom.difficulty.selectedIndex].text;
     setStatus(`AI difficulty set to ${level}. Deal a new hand to test the table.`);
+    saveStateToStorage();
   });
 
   dom.betRange.addEventListener('input', () => {
@@ -847,6 +938,7 @@ function bindEvents() {
 
 window.addEventListener('load', () => {
   createPlayers();
+  loadStateFromStorage();
   bindEvents();
   resetTable();
   updateBetAmountLabel();
@@ -881,7 +973,7 @@ window.pokerServerHooks = {
     return true;
   },
   getVersion() {
-    return '1.0.2';
+    return '1.0.3';
   }
 };
 
