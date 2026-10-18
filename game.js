@@ -625,12 +625,7 @@ function bestFiveCards(cards) {
 function getHandLabel(result) {
   const names = ['High Card', 'One Pair', 'Two Pair', 'Three of a Kind', 'Straight', 'Flush', 'Full House', 'Four of a Kind', 'Straight Flush'];
   const category = Math.max(0, result.category || 0);
-  const label = names[category] || 'High Card';
-  const highlight = result.value && result.value.length ? result.value[0] : 0;
-  if (highlight > 0 && category <= 5) {
-    return `${label} (${highlight})`;
-  }
-  return label;
+  return names[category] || 'High Card';
 }
 
 function evaluatePlayer(player, boardCards) {
@@ -639,29 +634,23 @@ function evaluatePlayer(player, boardCards) {
 }
 
 function distributePots() {
-  const contributors = state.players.map((p) => ({ player: p, contrib: p.totalContribution }));
-  const negative = contributors.filter((c) => c.contrib < 0);
-  if (negative.length > 0) {
-    contributors.forEach((c) => {
-      c.contrib = Math.max(0, c.contrib);
-    });
-  }
+  const contributors = state.players.map((player) => ({ player, contrib: player.totalContribution }));
 
-  while (contributors.some((c) => c.contrib > 0)) {
-    const positive = contributors.filter((c) => c.contrib > 0);
-    const minContrib = Math.min(...positive.map((c) => c.contrib));
+  while (contributors.some((entry) => entry.contrib > 0)) {
+    const positive = contributors.filter((entry) => entry.contrib > 0);
+    const minContrib = Math.min(...positive.map((entry) => entry.contrib));
     const sidePotAmount = minContrib * positive.length;
-    const eligible = contributors.filter((c) => c.contrib >= minContrib && !c.player.folded).map((c) => c.player);
+    const eligible = positive.filter((entry) => !entry.player.folded).map((entry) => entry.player);
 
     if (eligible.length === 0) {
-      const lastStanding = state.players.find((p) => !p.folded) || state.players[0];
+      const lastStanding = state.players.find((player) => !player.folded) || state.players[0];
       lastStanding.stack += sidePotAmount;
       appendLog(`${lastStanding.name} wins ${formatMoney(sidePotAmount)} (uncontested side pot).`);
     } else {
-      const ranks = eligible.map((p) => ({ player: p, rank: evaluatePlayer(p, state.communityCards) }));
+      const ranks = eligible.map((player) => ({ player, rank: evaluatePlayer(player, state.communityCards) }));
       ranks.sort((a, b) => compareHands(b.rank, a.rank));
       const bestRank = ranks[0].rank;
-      const winners = ranks.filter((r) => compareHands(r.rank, bestRank) === 0).map((r) => r.player);
+      const winners = ranks.filter((entry) => compareHands(entry.rank, bestRank) === 0).map((entry) => entry.player);
       const split = Math.floor(sidePotAmount / winners.length);
       const remainder = sidePotAmount % winners.length;
 
@@ -672,9 +661,9 @@ function distributePots() {
       });
     }
 
-    contributors.forEach((c) => {
-      if (c.contrib > 0) {
-        c.contrib -= minContrib;
+    contributors.forEach((entry) => {
+      if (entry.contrib > 0) {
+        entry.contrib -= minContrib;
       }
     });
   }
@@ -779,13 +768,11 @@ function decideAiAction(player) {
   const bestRank = combined.length >= 5 ? bestFiveCards(combined) : { category: -1, value: [0] };
   const strength = bestRank.category;
   const difficulty = dom.difficulty.value;
-
   const aggressionByDifficulty = { beginner: 0.18, easy: 0.27, medium: 0.38, expert: 0.52 };
   const aggression = aggressionByDifficulty[difficulty] || 0.38;
 
   if (toCall === 0) {
     if (strength >= 5 || Math.random() < aggression) return 'raise';
-    if (strength >= 2 && Math.random() < 0.55) return 'check';
     return 'check';
   }
 
