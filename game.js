@@ -40,7 +40,8 @@ const state = {
   currentBet: 0,
   minimumRaise: 20,
   aiTimer: null,
-  handNumber: 0
+  handNumber: 0,
+  roundSummary: []
 };
 
 function formatMoney(value) {
@@ -53,7 +54,7 @@ function cardToString(card) {
 
 function appendLog(line) {
   state.actionHistory.push(line);
-  if (state.actionHistory.length > 75) state.actionHistory.shift();
+  if (state.actionHistory.length > 80) state.actionHistory.shift();
   renderHistory();
 }
 
@@ -219,6 +220,7 @@ function resetTable() {
   state.communityCards = [];
   state.actionHistory = [];
   state.currentPlayerIndex = 0;
+  state.roundSummary = [];
 
   createPlayers();
   state.players.forEach((player) => {
